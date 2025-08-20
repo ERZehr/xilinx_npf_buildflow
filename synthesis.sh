@@ -1,7 +1,3 @@
 #!/bin/sh
-
-# apply pre-synthesis constraints
-tclsh apply_pre_synth_constraints.tcl
-
-# run synthesis
-vivado -mode batch -source run_synthesis.tcl
+set -e
+cmd.exe /c "${VIVADO} -mode batch -source ../../modules/xilinx_npf_buildflow/run_synthesis.tcl -nolog -nojournal -notrace"

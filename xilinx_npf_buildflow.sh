@@ -1,11 +1,23 @@
-#!/bin/sh
-./configuration_managment.sh
-source read_source.sh
-source synthesis.sh
-source link.sh
-source post_synth_opt.sh
-source place.sh
-source phys_opt.sh
-source route.sh
-source phys_opt.sh
-source write_bitstream.sh
+#!/bin/bash
+set -e
+mkdir spnr img logs
+source ./cfg.sh
+
+# Collect version info
+../../modules/xilinx_npf_buildflow/configuration_managment.sh | tee logs/configuration_management.log
+
+# Read files and run synthesis
+../../modules/xilinx_npf_buildflow/synthesis.sh | tee logs/synthesis.log
+mv *.dcp spnr/
+
+# Implementation & Bitgen
+../../modules/xilinx_npf_buildflow/implement.sh | tee logs/implement.log
+mv *.dcp spnr/
+mv *.rpt logs/
+mv *.txt logs/
+mv *.bit spnr/
+mv *.bin spnr/
+mv *.mcs spnr/
+
+
+# Format output files

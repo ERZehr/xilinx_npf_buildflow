@@ -11,7 +11,7 @@ set this_vivado_ip_files {
 }
 
 # Any block diagrams used at this level in the design
-set this_vivado_ip_files {
+set this_vivado_bd_files {
     {"relative_filepath/block1.bd" "library_name"}
     {"relative_filepath/block1.bd" "library_name"}
     {...... # Add any additional bd files and lib names here}
@@ -26,7 +26,7 @@ set this_rtl_files {
 }
 
 # src.tcl files for direct submodules
-set submodule_rtl_files {
+set submodule_src_files {
     "relative_filepath/submodule1/src.tcl"
     "relative_filepath/submodule2/src.tcl"
     ... # Add any additional submodule src files here
