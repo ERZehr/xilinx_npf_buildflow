@@ -122,6 +122,12 @@ foreach constraint_file $deduped_post_synth {
 puts "Running place design for design: $design_name"
 place_design
 
+
+################## POST PLACE OPT ####################
+# Run phys opt design
+puts "Running phys opt design for design: $design_name"
+phys_opt_design
+
 # Write_place_checkpoint
 write_checkpoint -force "placed_${design_name}.dcp"
 
@@ -174,16 +180,15 @@ foreach constraint_file $deduped_post_place {
 }
 
 
-################## POST PLACE OPT ####################
-# Run phys opt design
-puts "Running phys opt design for design: $design_name"
-phys_opt_design
-
-
 ################### ROUTE DESIGN #####################
 # Run route design
 puts "Running route design for design: $design_name"
 route_design
+
+################## POST PLACE OPT ####################
+# Run phys opt design
+puts "Running phys opt design for design: $design_name"
+phys_opt_design
 
 # Write_route_checkpoint
 write_checkpoint -force "routed_${design_name}.dcp"

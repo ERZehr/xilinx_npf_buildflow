@@ -1,5 +1,0 @@
-report_timing_summary  -file "$report_dir/timing_summary.rpt"
-report_utilization     -file "$report_dir/utilization.rpt"
-report_route_status    -file "$report_dir/route_status.rpt"
-report_bus_skew        -file "$report_dir/bus_skew.rpt"
-report_drc             -file "$report_dir/drc.rpt"
