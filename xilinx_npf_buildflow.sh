@@ -15,8 +15,8 @@ mv *.dcp spnr/
 mv *.dcp spnr/
 mv *.rpt logs/
 mv *.txt logs/
-mv *.bit spnr/
-mv *.bin spnr/
+mv *.bit img/
+mv *.bin img/
 mv *.mcs spnr/
 
 

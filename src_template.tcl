@@ -1,6 +1,6 @@
 # For submodules, these are ignored
 set design_name "my_design"
-set part "xc7z020clg484-1"
+set part "xc7a35tcpg236-1 (your part number)"
 set top_module "my_top_module"
 
 # Any pure or altered vivado IPs used at this level in the design
@@ -40,6 +40,7 @@ set pre_synth_constraints {
     "dynamic_clocks_relative_filepath/file.xdc"
     ... # Add any additional xdc files here
 }
+
 # ==== Pre-Place Constraints ====
 # Static: pin LOCs, IO standards, package pin assignments, BUFG/MMCM/GT placement, Pblocks/area groups, SLR/CLOCK_REGION, prohibit sites
 # PR: create Pblocks for each reconfigurable region, lock static logic outside PR regions, assign interface pins for static↔RM connections, prohibit placement/routing into PR regions
@@ -50,6 +51,7 @@ set pre_place_constraints {
     "dynamic_pblocks_relative_filepath.xdc"
     ... # Add any additional xdc files here
 }
+
 # ==== Post-Place Constraints ====
 # Static: path-specific max/min delays, hold/setup adjustments, skew/fanout limits, clock uncertainty, retiming enable/disable, Pblock legality
 # PR: enforce timing exceptions at static↔RM boundaries, legalize RM Pblocks, check interface timing for partition pins, DFX decoupler placement
@@ -59,6 +61,7 @@ set post_place_constraints {
     "dynamic_fanout_relative_filepath.xdc"
     ... # Add any additional xdc files here
 }
+
 # ==== Post-Route Constraints ====
 # Static: final timing exceptions, detailed hold/setup checks, CDC/DRC, bus skew reports, signal integrity (transition/load), bitstream/pr pin checks
 # PR: enforce route containment (no static nets crossing into RM Pblocks), prohibit routing violations, validate isolation of static vs dynamic regions, final boundary timing checks
