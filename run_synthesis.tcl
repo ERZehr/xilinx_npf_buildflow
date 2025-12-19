@@ -1,5 +1,9 @@
 set_param general.maxThreads 8
 
+set script_path [file normalize [info script]]
+set SCRIPT_DIR [file dirname $script_path]
+cd $SCRIPT_DIR
+
 # Load top-level vars from src.tcl
 if {[file exists "../../top/hdl/scripts/src.tcl"]} {
     set fh [open "../../top/hdl/scripts/src.tcl" r]
@@ -170,4 +174,5 @@ puts "Running synthesis for design: $design_name"
 synth_design -top $top_module -part $part
 
 # Write_synth_checkpoint
+
 write_checkpoint -force "synthesized_${design_name}.dcp"
