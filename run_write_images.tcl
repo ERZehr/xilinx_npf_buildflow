@@ -1,6 +1,10 @@
 ######################### SETUP #############################
 set_param general.maxThreads 8
 
+set script_path [file normalize [info script]]
+set SCRIPT_DIR [file dirname $script_path]
+cd $SCRIPT_DIR
+
 # Load top-level vars from src.tcl
 if {[file exists "../../top/hdl/scripts/src.tcl"]} {
     set fh [open "../../top/hdl/scripts/src.tcl" r]
@@ -99,4 +103,5 @@ foreach constraint_file $deduped_post_route {
 ##################### WRITE IMAGES #######################
 # Write the bitstream
 write_bitstream -force ./top.bit
+
 
