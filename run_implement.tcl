@@ -1,6 +1,10 @@
 ######################### SETUP #############################
 set_param general.maxThreads 8
 
+set script_path [file normalize [info script]]
+set SCRIPT_DIR [file dirname $script_path]
+cd $SCRIPT_DIR
+
 # Load top-level vars from src.tcl
 if {[file exists "../../top/hdl/scripts/src.tcl"]} {
     set fh [open "../../top/hdl/scripts/src.tcl" r]
@@ -204,4 +208,5 @@ report_drc             -file "drc.rpt"
 
 ##################### WRITE IMAGES #######################
 source ../../modules/xilinx_npf_buildflow/run_write_images.tcl
+
 
