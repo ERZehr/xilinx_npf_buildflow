@@ -207,6 +207,6 @@ report_drc             -file "drc.rpt"
 
 
 ##################### WRITE IMAGES #######################
-source ../../modules/xilinx_npf_buildflow/run_write_images.tcl
+source ../../make/xilinx_npf_buildflow/run_write_images.tcl
 
 
