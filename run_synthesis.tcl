@@ -19,37 +19,36 @@ puts "Part:        $part"
 puts "Top Module:  $top_module"
 puts ""
 
-set all_src_files { ../../top/hdl/scripts/src.tcl }
-set all_ip_files {}
-set all_bd_files {}
-set all_rtl_files {}
-set all_pre_synth {}
+set all_src_files $submodule_src_files
+set all_ip_files  $this_vivado_ip_files
+set all_bd_files  $this_vivado_bd_files
+set all_rtl_files $this_rtl_files
+set all_pre_synth $pre_synth_constraints
 
 # -----------------------------
 # Helper: rewrite relative paths
 # -----------------------------
-proc rewrite_relative {abs_target top_module} {
-    set abs_target [file normalize $abs_target]
-    puts $abs_target
+proc rewrite_relative {sources SCRIPT_DIR} {
+    set rewritten {}
     set repo_root [file normalize "../../.."]
-    puts $repo_root
-    if {[string first $repo_root $abs_target] == 0} {
-        set rel_tail [string range $abs_target [string length $repo_root] end]
-        return "../../$rel_tail"
-    } else {
-        return $abs_target
+    foreach s $sources {
+        set file [lindex $s 0]
+        set lib  [lindex $s 1]
+        set new_file $SCRIPT_DIR/$file
+        lappend rewritten [list $new_file $lib]
     }
+    return $rewritten
 }
 
 foreach src $all_src_files {
     set src_filepath [file dirname [file dirname [file dirname $src]]]
+    puts $src_filepath
     set fh [open $src r]
     set file_content [read $fh]
     eval $file_content
 
     # SRC 
     foreach file $submodule_src_files {
-        puts "Processing: $file"
         set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
         puts "Processing: $new_filepath"
         lappend all_src_files $new_filepath
@@ -57,7 +56,6 @@ foreach src $all_src_files {
 
     # IP
     foreach file $this_vivado_ip_files {
-        puts "Processing: $file"
         set new_filepath [string cat $src_filepath "/ip/" [file tail [lindex $file 0]]]
         puts "Processing: $new_filepath"
         lappend all_ip_files $new_filepath
@@ -65,7 +63,6 @@ foreach src $all_src_files {
 
     # BD 
     foreach file $this_vivado_bd_files {
-        puts "Processing: $file"
         set new_filepath [string cat $src_filepath "/bd/" [file tail [lindex $file 0]]]
         puts "Processing: $new_filepath"
         lappend all_bd_files $new_filepath
@@ -75,7 +72,7 @@ foreach src $all_src_files {
     foreach file $this_rtl_files {
         set new_filepath [string cat $src_filepath "/hdl/" [file tail [lindex $file 0]]]
         puts "Processing: $new_filepath"
-        lappend all_rtl_files $new_filepath
+        lappend all_rtl_files [list $new_filepath $file 1]
     }
 
     # Pre Synth XDC
@@ -85,7 +82,6 @@ foreach src $all_src_files {
         lappend all_pre_synth $new_filepath
     }
 }
-
 
 
 # -----------------------------
@@ -111,6 +107,14 @@ set deduped_ip_files   [dedup_sources $all_ip_files]
 set deduped_bd_files   [dedup_sources $all_bd_files]
 set deduped_rtl_files  [dedup_sources $all_rtl_files]
 set deduped_pre_synth  [dedup_sources $all_pre_synth]
+
+# -----------------------------
+# Absolute File Paths
+# -----------------------------
+set deduped_ip_files   [rewrite_relative $deduped_ip_files $SCRIPT_DIR]
+set deduped_bd_files   [rewrite_relative $deduped_bd_files $SCRIPT_DIR]
+set deduped_rtl_files  [rewrite_relative $deduped_rtl_files $SCRIPT_DIR]
+set deduped_pre_synth  [rewrite_relative $deduped_pre_synth $SCRIPT_DIR]
 
 # -----------------------------
 # Print summary
@@ -147,12 +151,13 @@ foreach bd_file $deduped_bd_files {
 
 foreach rtl_file $deduped_rtl_files {
     set rtl_path [lindex $rtl_file 0]
+    set rtl_lib  [lindex $rtl_file 1]
     if {[file exists $rtl_path]} {
         set file_type [file extension $rtl_path]
         puts "Reading RTL file: $rtl_path"
         switch $file_type {
-            ".vhd"  - ".vhdl" { read_vhdl $rtl_path }
-            ".v"   - ".sv"    { read_verilog $rtl_path }
+            ".vhd"  - ".vhdl" { read_vhdl -library $rtl_lib -vhdl2008 $rtl_path }
+            ".v"   - ".sv"    { read_verilog -library $rtl_lib $rtl_path }
             default { error "Unsupported RTL file type: $rtl_path" }
         }
     } else {
@@ -174,5 +179,4 @@ puts "Running synthesis for design: $design_name"
 synth_design -top $top_module -part $part
 
 # Write_synth_checkpoint
-
 write_checkpoint -force "synthesized_${design_name}.dcp"
