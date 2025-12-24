@@ -19,44 +19,55 @@ puts "Part:        $part"
 puts "Top Module:  $top_module"
 puts ""
 
+# Get all the src files from submodules
 set all_src_files $submodule_src_files
-set all_ip_files  $this_vivado_ip_files
-set all_bd_files  $this_vivado_bd_files
-set all_rtl_files $this_rtl_files
-set all_pre_synth $pre_synth_constraints
-
 foreach src $all_src_files {
     set src_filepath [file dirname [file dirname [file dirname $src]]]
-    puts $src_filepath
     set fh [open $src r]
     set file_content [read $fh]
     eval $file_content
 
-    # SRC 
+    # grab submodule src files and add them to the list we are iterating through
     foreach file $submodule_src_files {
         set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
         lappend all_src_files $new_filepath
     }
+}
+
+# Reverse the list to process in correct order (dependencies first)
+# Add the top level src.tcl last
+set all_src_files [lreverse $all_src_files]
+lappend all_src_files "../../top/hdl/scripts/src.tcl"
+
+puts "All Source Files to Process: $all_src_files"
+
+set all_ip_files {}
+set all_bd_files {}
+set all_rtl_files {}
+set all_pre_synth {}
+# Read our source files and accumulate all files
+foreach src $all_src_files {
+    set src_filepath [file dirname [file dirname [file dirname $src]]]
+    set fh [open $src r]
+    set file_content [read $fh]
+    eval $file_content
 
     # IP
     foreach file $this_vivado_ip_files {
         set new_filepath [string cat $src_filepath "/ip/" [file tail [lindex $file 0]]]
         lappend all_ip_files $new_filepath
     }
-
     # BD 
     foreach file $this_vivado_bd_files {
         set new_filepath [string cat $src_filepath "/bd/" [file tail [lindex $file 0]]]
         lappend all_bd_files $new_filepath
     }
-
     # RTL 
     foreach file $this_rtl_files {
         set new_filepath [string cat $src_filepath "/hdl/" [file tail [lindex $file 0]]]
         set lib [lindex $file 1]
         lappend all_rtl_files [list $new_filepath $lib]
     }
-
     # Pre Synth XDC
     foreach file $pre_synth_constraints {
         set new_filepath [string cat $src_filepath "/constraints/" [file tail [lindex $file 0]]]

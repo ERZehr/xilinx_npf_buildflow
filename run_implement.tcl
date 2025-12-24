@@ -1,6 +1,7 @@
 ######################### SETUP #############################
 set_param general.maxThreads 8
 
+# Get all of the src files from submodules
 set script_path [file normalize [info script]]
 set SCRIPT_DIR [file dirname $script_path]
 cd $SCRIPT_DIR
@@ -14,6 +15,51 @@ if {[file exists "../../top/hdl/scripts/src.tcl"]} {
 } else {
     error "File not found: ../../top/hdl/scripts/src.tcl"
 }
+
+# Get all the src files from submodules
+set top_level_src $submodule_src_files
+set all_src_files $top_level_src
+foreach src $all_src_files {
+    set src_filepath [file dirname [file dirname [file dirname $src]]]
+    set fh [open $src r]
+    set file_content [read $fh]
+    eval $file_content
+
+    # grab submodule src files and add them to the list we are iterating through
+    foreach file $submodule_src_files {
+        set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
+        lappend all_src_files $new_filepath
+    }
+}
+
+# Reverse the list to process in correct order (dependencies first)
+# Add the top level src.tcl last
+set all_src_files [lreverse $all_src_files]
+lappend all_src_files "../../top/hdl/scripts/src.tcl"
+
+puts "All Source Files to Process: $all_src_files"
+
+# -----------------------------
+# Deduplicate list based on file path + library
+# -----------------------------
+proc dedup_sources {sources} {
+    array set seen {}
+    set unique {}
+    foreach s $sources {
+        set key "[lindex $s 0]::[lindex $s 1]"  ;# path + library
+        if {![info exists seen($key)]} {
+            set seen($key) 1
+            lappend unique $s
+        }
+    }
+    return $unique
+}
+
+set fh [open "../../top/hdl/scripts/src.tcl" r]
+set file_content [read $fh]
+close $fh
+eval $file_content
+##############################################################
 
 
 ######################### LINK STAGE #########################
@@ -41,84 +87,40 @@ power_opt_design
 write_checkpoint -force "post_synth_opt_${design_name}.dcp"
 
 
-################### POST SYNTH CONSTRAINTS ##################
-set all_src_files { ../../top/hdl/scripts/src.tcl }
-set all_post_synth {}
-
-# -----------------------------
-# Helper: rewrite relative paths
-# -----------------------------
-proc rewrite_relative {abs_target top_module} {
-    set abs_target [file normalize $abs_target]
-    puts $abs_target
-    set repo_root [file normalize "../../.."]
-    puts $repo_root
-    if {[string first $repo_root $abs_target] == 0} {
-        set rel_tail [string range $abs_target [string length $repo_root] end]
-        return "../../$rel_tail"
-    } else {
-        return $abs_target
-    }
-}
-
+############ EXTRACT PRE PLACE CONSTRAINTS ############
+set all_pre_place {}
+# Get all the src files from submodules
 foreach src $all_src_files {
     set src_filepath [file dirname [file dirname [file dirname $src]]]
     set fh [open $src r]
     set file_content [read $fh]
     eval $file_content
 
-    # SRC 
-    foreach file $submodule_src_files {
-        puts "Processing: $file"
-        set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
-        lappend all_src_files $new_filepath
-    }
-
-    # Pre Synth XDC
-    foreach file $pre_synth_constraints {
+    # Post Synth XDC
+    foreach file $pre_place_constraints {
         set new_filepath [string cat $src_filepath "/constraints/" [file tail [lindex $file 0]]]
         puts "Processing: $new_filepath"
-        lappend all_pre_synth $new_filepath
+        lappend all_pre_place $new_filepath
     }
 }
 
-# -----------------------------
-# Deduplicate list based on file path + library
-# -----------------------------
-proc dedup_sources {sources} {
-    array set seen {}
-    set unique {}
-    foreach s $sources {
-        set key "[lindex $s 0]::[lindex $s 1]"  ;# path + library
-        if {![info exists seen($key)]} {
-            set seen($key) 1
-            lappend unique $s
-        }
-    }
-    return $unique
-}
+set deduped_pre_place  [dedup_sources $all_pre_place]
 
-# -----------------------------
-# Deduplicate final lists
-# -----------------------------
-set deduped_post_synth  [dedup_sources $all_post_synth]
-
-# -----------------------------
-# Print summary
-# -----------------------------
-puts ""
-puts "\nPost-Synth XDCs:    $deduped_post_synth"
-puts ""
-
-foreach constraint_file $deduped_post_synth {
+# Print summary and apply
+foreach constraint_file $deduped_pre_place {
     if {[file exists $constraint_file]} {
-        puts "Reading post-synthesis constraint file: $constraint_file"
+        puts "Reading pre-place constraint file: $constraint_file"
         read_xdc $constraint_file
     } else {
-        puts "Warning: Post-synthesis constraint file not found: $constraint_file"
+        puts "Warning: Pre-place constraint file not found: $constraint_file"
     }
 }
+
+set fh [open "../../top/hdl/scripts/src.tcl" r]
+set file_content [read $fh]
+close $fh
+eval $file_content
+#############################################################
 
 
 ####################### PLACE STAGE #########################
@@ -136,23 +138,15 @@ phys_opt_design
 write_checkpoint -force "placed_${design_name}.dcp"
 
 
-################# POST PLACE CONSTRAINTS ####################
-set all_src_files { ../../top/hdl/scripts/src.tcl }
+############ EXTRACT POST PLACE CONSTRAINTS ############
 set all_post_place {}
+# Get all the src files from submodules
 
 foreach src $all_src_files {
     set src_filepath [file dirname [file dirname [file dirname $src]]]
     set fh [open $src r]
     set file_content [read $fh]
     eval $file_content
-
-    # SRC 
-    foreach file $submodule_src_files {
-        puts "Processing: $file"
-        set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
-        lappend all_src_files $new_filepath
-    }
 
     # Post Place XDC
     foreach file $post_place_constraints {
@@ -162,26 +156,23 @@ foreach src $all_src_files {
     }
 }
 
-# -----------------------------
-# Deduplicate final lists
-# -----------------------------
 set deduped_post_place  [dedup_sources $all_post_place]
 
-# -----------------------------
-# Print summary
-# -----------------------------
-puts ""
-puts "\nPost-Place XDCs:    $deduped_post_place"
-puts ""
-
+# Print summary and apply
 foreach constraint_file $deduped_post_place {
     if {[file exists $constraint_file]} {
-        puts "Reading post-placement constraint file: $constraint_file"
+        puts "Reading post-place constraint file: $constraint_file"
         read_xdc $constraint_file
     } else {
-        puts "Warning: Post-placement constraint file not found: $constraint_file"
+        puts "Warning: Post-place constraint file not found: $constraint_file"
     }
 }
+
+set fh [open "../../top/hdl/scripts/src.tcl" r]
+set file_content [read $fh]
+close $fh
+eval $file_content
+#############################################################
 
 
 ################### ROUTE DESIGN #####################
@@ -208,5 +199,4 @@ report_drc             -file "drc.rpt"
 
 ##################### WRITE IMAGES #######################
 source ../../make/xilinx_npf_buildflow/run_write_images.tcl
-
 
