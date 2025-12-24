@@ -25,21 +25,6 @@ set all_bd_files  $this_vivado_bd_files
 set all_rtl_files $this_rtl_files
 set all_pre_synth $pre_synth_constraints
 
-# -----------------------------
-# Helper: rewrite relative paths
-# -----------------------------
-proc rewrite_relative {sources SCRIPT_DIR} {
-    set rewritten {}
-    set repo_root [file normalize "../../.."]
-    foreach s $sources {
-        set file [lindex $s 0]
-        set lib  [lindex $s 1]
-        set new_file $SCRIPT_DIR/$file
-        lappend rewritten [list $new_file $lib]
-    }
-    return $rewritten
-}
-
 foreach src $all_src_files {
     set src_filepath [file dirname [file dirname [file dirname $src]]]
     puts $src_filepath
@@ -50,35 +35,31 @@ foreach src $all_src_files {
     # SRC 
     foreach file $submodule_src_files {
         set new_filepath [string cat $src_filepath "/scripts/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
         lappend all_src_files $new_filepath
     }
 
     # IP
     foreach file $this_vivado_ip_files {
         set new_filepath [string cat $src_filepath "/ip/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
         lappend all_ip_files $new_filepath
     }
 
     # BD 
     foreach file $this_vivado_bd_files {
         set new_filepath [string cat $src_filepath "/bd/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
         lappend all_bd_files $new_filepath
     }
 
     # RTL 
     foreach file $this_rtl_files {
         set new_filepath [string cat $src_filepath "/hdl/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
-        lappend all_rtl_files [list $new_filepath $file 1]
+        set lib [lindex $file 1]
+        lappend all_rtl_files [list $new_filepath $lib]
     }
 
     # Pre Synth XDC
     foreach file $pre_synth_constraints {
         set new_filepath [string cat $src_filepath "/constraints/" [file tail [lindex $file 0]]]
-        puts "Processing: $new_filepath"
         lappend all_pre_synth $new_filepath
     }
 }
@@ -99,7 +80,6 @@ proc dedup_sources {sources} {
     }
     return $unique
 }
-
 # -----------------------------
 # Deduplicate final lists
 # -----------------------------
@@ -108,6 +88,21 @@ set deduped_bd_files   [dedup_sources $all_bd_files]
 set deduped_rtl_files  [dedup_sources $all_rtl_files]
 set deduped_pre_synth  [dedup_sources $all_pre_synth]
 
+
+# -----------------------------
+# Helper: rewrite relative paths
+# -----------------------------
+proc rewrite_relative {sources SCRIPT_DIR} {
+    set rewritten {}
+    set repo_root [file normalize "../../.."]
+    foreach s $sources {
+        set file [lindex $s 0]
+        set lib  [lindex $s 1]
+        set new_file $SCRIPT_DIR/$file
+        lappend rewritten [list $new_file $lib]
+    }
+    return $rewritten
+}
 # -----------------------------
 # Absolute File Paths
 # -----------------------------
